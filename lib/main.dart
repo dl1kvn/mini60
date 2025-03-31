@@ -1,0 +1,153 @@
+// lib/main.dart
+
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:mini6060/pages/antennatypes.dart';
+import 'controllers/bluetooth_controller.dart';
+import 'widgets/connect_dialog.dart';
+import 'pages/frequency_scan_page.dart';
+
+void main() {
+  // Stelle sicher, dass Flutter-Binding initialisiert ist
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Starte die App
+  runApp(MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return GetMaterialApp(
+      title: 'Mini60 App',
+      theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
+      home: HomePage(),
+    );
+  }
+}
+
+class HomePage extends StatelessWidget {
+  // Bluetooth-Controller initialisieren
+  final BluetoothController bluetoothController = Get.put(
+    BluetoothController(),
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Mini60 App')),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Verbindungsstatus anzeigen
+            Obx(() {
+              return Column(
+                children: [
+                  Icon(
+                    bluetoothController.isConnected.value
+                        ? Icons.bluetooth_connected
+                        : Icons.bluetooth_disabled,
+                    size: 64,
+                    color:
+                        bluetoothController.isConnected.value
+                            ? Colors.green
+                            : Colors.grey,
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    bluetoothController.isConnected.value
+                        ? 'Verbunden mit ${bluetoothController.deviceName.value}'
+                        : 'Nicht verbunden',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              );
+            }),
+
+            SizedBox(height: 32),
+
+            // Verbindungsbutton
+            ElevatedButton.icon(
+              icon: Icon(Icons.bluetooth_searching),
+              label: Text('Mit Mini60 verbinden'),
+              style: ElevatedButton.styleFrom(
+                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+              onPressed: () async {
+                // Zeige Verbindungsdialog
+                final result = await Get.dialog(
+                  ConnectDialog(),
+                  barrierDismissible: false,
+                );
+
+                if (result == true) {
+                  // Verbunden
+                  Get.snackbar(
+                    'Verbunden',
+                    'Erfolgreich mit ${bluetoothController.deviceName.value} verbunden',
+                    snackPosition: SnackPosition.BOTTOM,
+                    backgroundColor: Colors.green,
+                    colorText: Colors.white,
+                  );
+                }
+              },
+            ),
+
+            SizedBox(height: 16),
+
+            // Aktionsbuttons (nur anzeigen, wenn verbunden)
+            Obx(() {
+              if (!bluetoothController.isConnected.value) {
+                return SizedBox.shrink();
+              }
+
+              return Column(
+                children: [
+                  TextButton.icon(
+                    icon: Icon(Icons.bluetooth_disabled),
+                    label: Text('Verbindung trennen'),
+                    onPressed: () async {
+                      await bluetoothController.disconnectDevice();
+                      Get.snackbar(
+                        'Getrennt',
+                        'Verbindung getrennt',
+                        snackPosition: SnackPosition.BOTTOM,
+                      );
+                    },
+                  ),
+
+                  // Frequenz-Scan Button
+                  SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    icon: Icon(Icons.radio_button_checked),
+                    label: Text('Frequenz-Scan starten'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                    ),
+                    onPressed: () {
+                      Get.to(() => FrequencyScanPage());
+                    },
+                  ),
+                ],
+              );
+            }),
+            SizedBox(height: 16),
+            ElevatedButton.icon(
+              icon: Icon(Icons.list),
+              label: Text("Antennen DB"),
+              onPressed: () {
+                Get.to(() => AntennaTypesPage());
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
