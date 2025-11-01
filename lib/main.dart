@@ -3,15 +3,16 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mini6060/pages/antennatypes.dart';
+import 'package:mini6060/pages/splash_screen.dart';
 import 'controllers/bluetooth_controller.dart';
 import 'widgets/connect_dialog.dart';
 import 'pages/frequency_scan_page.dart';
 
 void main() {
-  // Stelle sicher, dass Flutter-Binding initialisiert ist
+  // Ensure Flutter binding is initialized
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Starte die App
+  // Start the app
   runApp(MyApp());
 }
 
@@ -21,13 +22,13 @@ class MyApp extends StatelessWidget {
     return GetMaterialApp(
       title: 'Mini60 App',
       theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
-      home: HomePage(),
+      home: SplashScreen(nextPage: HomePage()),
     );
   }
 }
 
 class HomePage extends StatelessWidget {
-  // Bluetooth-Controller initialisieren
+  // Initialize Bluetooth controller
   final BluetoothController bluetoothController = Get.put(
     BluetoothController(),
   );
@@ -40,7 +41,7 @@ class HomePage extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Verbindungsstatus anzeigen
+            // Show connection status
             Obx(() {
               return Column(
                 children: [
@@ -57,8 +58,8 @@ class HomePage extends StatelessWidget {
                   SizedBox(height: 16),
                   Text(
                     bluetoothController.isConnected.value
-                        ? 'Verbunden mit ${bluetoothController.deviceName.value}'
-                        : 'Nicht verbunden',
+                        ? 'Connected to ${bluetoothController.deviceName.value}'
+                        : 'Not connected',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ],
@@ -67,25 +68,25 @@ class HomePage extends StatelessWidget {
 
             SizedBox(height: 32),
 
-            // Verbindungsbutton
+            // Connection button
             ElevatedButton.icon(
               icon: Icon(Icons.bluetooth_searching),
-              label: Text('Mit Mini60 verbinden'),
+              label: Text('Connect to Mini60'),
               style: ElevatedButton.styleFrom(
                 padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
               onPressed: () async {
-                // Zeige Verbindungsdialog
+                // Show connection dialog
                 final result = await Get.dialog(
                   ConnectDialog(),
                   barrierDismissible: false,
                 );
 
                 if (result == true) {
-                  // Verbunden
+                  // Connected
                   Get.snackbar(
-                    'Verbunden',
-                    'Erfolgreich mit ${bluetoothController.deviceName.value} verbunden',
+                    'Connected',
+                    'Successfully connected to ${bluetoothController.deviceName.value}',
                     snackPosition: SnackPosition.BOTTOM,
                     backgroundColor: Colors.green,
                     colorText: Colors.white,
@@ -96,7 +97,7 @@ class HomePage extends StatelessWidget {
 
             SizedBox(height: 16),
 
-            // Aktionsbuttons (nur anzeigen, wenn verbunden)
+            // Action buttons (only show when connected)
             Obx(() {
               if (!bluetoothController.isConnected.value) {
                 return SizedBox.shrink();
@@ -106,22 +107,22 @@ class HomePage extends StatelessWidget {
                 children: [
                   TextButton.icon(
                     icon: Icon(Icons.bluetooth_disabled),
-                    label: Text('Verbindung trennen'),
+                    label: Text('Disconnect'),
                     onPressed: () async {
                       await bluetoothController.disconnectDevice();
                       Get.snackbar(
-                        'Getrennt',
-                        'Verbindung getrennt',
+                        'Disconnected',
+                        'Connection disconnected',
                         snackPosition: SnackPosition.BOTTOM,
                       );
                     },
                   ),
 
-                  // Frequenz-Scan Button
+                  // Frequency Scan Button
                   SizedBox(height: 16),
                   ElevatedButton.icon(
                     icon: Icon(Icons.radio_button_checked),
-                    label: Text('Frequenz-Scan starten'),
+                    label: Text('Start Frequency Scan'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue,
                       foregroundColor: Colors.white,
@@ -140,7 +141,7 @@ class HomePage extends StatelessWidget {
             SizedBox(height: 16),
             ElevatedButton.icon(
               icon: Icon(Icons.list),
-              label: Text("Antennen DB"),
+              label: Text("Antenna DB"),
               onPressed: () {
                 Get.to(() => AntennaTypesPage());
               },

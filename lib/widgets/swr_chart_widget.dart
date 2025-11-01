@@ -89,7 +89,7 @@ class SWRChartWidget extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Text(
-            'Minimaler SWR: ${_findMinSWR().toStringAsFixed(2)} bei ${_findMinSWRFrequency().toStringAsFixed(1)} kHz',
+            'Minimal SWR: ${_findMinSWR().toStringAsFixed(2)} at ${_findMinSWRFrequency().toStringAsFixed(1)} kHz',
             style: TextStyle(
               fontSize: 12,
               color: Colors.blue,

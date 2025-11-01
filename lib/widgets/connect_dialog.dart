@@ -2,14 +2,68 @@
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../controllers/bluetooth_controller.dart';
 import '../models/mini60_device.dart';
 
-class ConnectDialog extends StatelessWidget {
+class ConnectDialog extends StatefulWidget {
+  @override
+  _ConnectDialogState createState() => _ConnectDialogState();
+}
+
+class _ConnectDialogState extends State<ConnectDialog> {
   final BluetoothController controller = Get.find<BluetoothController>();
+  bool _permissionsChecked = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkPermissionsAndStartScan();
+  }
+
+  Future<void> _checkPermissionsAndStartScan() async {
+    // Prüfe und fordere Berechtigungen an
+    final hasPermissions = await controller.requestBluetoothPermissions();
+    setState(() {
+      _permissionsChecked = true;
+    });
+
+    if (hasPermissions && !controller.isBluetoothOff()) {
+      // Start scan automatically when permissions are granted
+      controller.startScan();
+    }
+  }
+
+  Future<void> _openAppSettings() async {
+    await openAppSettings();
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (!_permissionsChecked) {
+      // Show loading indicator during permission check
+      return Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Checking permissions...'),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 0,
@@ -40,7 +94,7 @@ class ConnectDialog extends StatelessWidget {
         Icon(Icons.bluetooth_searching, size: 48, color: Colors.blue),
         SizedBox(height: 8),
         Text(
-          'Mit Mini60 verbinden',
+          'Connect to Mini60',
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
       ],
@@ -49,15 +103,15 @@ class ConnectDialog extends StatelessWidget {
 
   Widget _buildContent() {
     return Obx(() {
-      // Überprüfe Bluetooth-Status
+      // Check Bluetooth status
       if (controller.isBluetoothOff()) {
         return Column(
           children: [
-            Text('Bluetooth ist deaktiviert', style: TextStyle(fontSize: 16)),
+            Text('Bluetooth is disabled', style: TextStyle(fontSize: 16)),
             SizedBox(height: 16),
             ElevatedButton(
               onPressed: controller.turnOnBluetooth,
-              child: Text('Bluetooth aktivieren'),
+              child: Text('Enable Bluetooth'),
               style: ElevatedButton.styleFrom(
                 minimumSize: Size(double.infinity, 40),
               ),
@@ -66,40 +120,49 @@ class ConnectDialog extends StatelessWidget {
         );
       }
 
-      // Zeige Scan-Status
+      // Show scan status
       if (controller.isScanning.value) {
         return Column(
           children: [
             CircularProgressIndicator(),
             SizedBox(height: 16),
             Text(
-              'Suche nach Mini60-Geräten...',
+              'Searching for Mini60 devices...',
               style: TextStyle(fontSize: 16),
             ),
           ],
         );
       }
 
-      // Zeige gefundene Geräte oder "Keine Geräte gefunden"
+      // Show found devices or "No devices found"
       final devices = controller.devices;
       if (devices.isEmpty) {
         return Column(
           children: [
             Text(
-              'Keine Mini60-Geräte gefunden',
+              'No Mini60 devices found',
               style: TextStyle(fontSize: 16),
             ),
             SizedBox(height: 16),
             Text(
-              'Stelle sicher, dass dein Mini60 eingeschaltet und in Reichweite ist',
+              'Make sure your Mini60 is turned on and within range',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+            SizedBox(height: 16),
+            TextButton.icon(
+              onPressed: _openAppSettings,
+              icon: Icon(Icons.settings, size: 18),
+              label: Text('Open App Permissions'),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.blue,
+              ),
             ),
           ],
         );
       }
 
-      // Zeige Geräteliste
+      // Show device list
       return Container(
         height: 200,
         child: ListView.builder(
@@ -120,12 +183,12 @@ class ConnectDialog extends StatelessWidget {
       child: ListTile(
         leading: Icon(Icons.bluetooth, color: Colors.blue),
         title: Text(
-          device.device.name ?? 'Unbekanntes Gerät',
+          device.device.name ?? 'Unknown Device',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Text('Signal: ${device.rssi} dBm'),
         onTap: () async {
-          // Verbindungsversuch anzeigen
+          // Show connection attempt
           Get.dialog(
             Dialog(
               child: Padding(
@@ -135,7 +198,7 @@ class ConnectDialog extends StatelessWidget {
                   children: [
                     CircularProgressIndicator(),
                     SizedBox(height: 16),
-                    Text('Verbinde mit ${device.device.name ?? "Gerät"}...'),
+                    Text('Connecting to ${device.device.name ?? "device"}...'),
                   ],
                 ),
               ),
@@ -143,20 +206,20 @@ class ConnectDialog extends StatelessWidget {
             barrierDismissible: false,
           );
 
-          // Verbinden
+          // Connect
           final success = await controller.connectToDevice(device);
 
-          // Dialog schließen
+          // Close dialog
           Get.back();
 
           if (success) {
-            // Erfolgreich verbunden, schließe den Verbindungsdialog
+            // Successfully connected, close connection dialog
             Get.back(result: true);
           } else {
-            // Fehler anzeigen
+            // Show error
             Get.snackbar(
-              'Verbindungsfehler',
-              'Konnte keine Verbindung zum Gerät herstellen.',
+              'Connection Error',
+              'Could not establish connection to device.',
               snackPosition: SnackPosition.BOTTOM,
               backgroundColor: Colors.red,
               colorText: Colors.white,
@@ -169,23 +232,42 @@ class ConnectDialog extends StatelessWidget {
 
   Widget _buildActions() {
     return Obx(() {
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      return Column(
         children: [
-          TextButton(
-            onPressed: () => Get.back(result: false),
-            child: Text('Abbrechen'),
-          ),
-          if (!controller.isBluetoothOff())
-            ElevatedButton(
-              onPressed:
-                  controller.isScanning.value
-                      ? controller.stopScan
-                      : controller.startScan,
-              child: Text(
-                controller.isScanning.value ? 'Scan stoppen' : 'Scan starten',
-              ),
+          // Link to app permissions
+          TextButton.icon(
+            onPressed: _openAppSettings,
+            icon: Icon(Icons.settings, size: 16),
+            label: Text(
+              'App Permissions',
+              style: TextStyle(fontSize: 12),
             ),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.grey[700],
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            ),
+          ),
+          SizedBox(height: 8),
+          // Action buttons
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              TextButton(
+                onPressed: () => Get.back(result: false),
+                child: Text('Cancel'),
+              ),
+              if (!controller.isBluetoothOff())
+                ElevatedButton(
+                  onPressed:
+                      controller.isScanning.value
+                          ? controller.stopScan
+                          : controller.startScan,
+                  child: Text(
+                    controller.isScanning.value ? 'Stop Scan' : 'Start Scan',
+                  ),
+                ),
+            ],
+          ),
         ],
       );
     });

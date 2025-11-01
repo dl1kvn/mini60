@@ -78,7 +78,7 @@ class _FrequencyScanPageState extends State<FrequencyScanPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Frequenz-Scan'),
+        title: Text('Frequency Scan'),
         actions: [
           IconButton(
             icon: Icon(Icons.settings),
@@ -93,43 +93,76 @@ class _FrequencyScanPageState extends State<FrequencyScanPage> {
         children: [
           _buildFrequencyInputs(),
           _buildRangeSlider(),
-          DropdownButton<BandRange>(
-            hint: Text("Band wählen"),
-            value: selectedBand,
-            items:
-                bandRanges.map((band) {
-                  return DropdownMenuItem(
-                    value: band,
-                    child: Text(
-                      "${band.name} (${band.start.toInt()}–${band.end.toInt()} kHz)",
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: DropdownButton<BandRange>(
+              hint: Text("Select Band"),
+              value: selectedBand,
+              isExpanded: true,
+              items:
+                  bandRanges.map((band) {
+                    return DropdownMenuItem(
+                      value: band,
+                      child: Text(
+                        "${band.name} (${band.start.toInt()}–${band.end.toInt()} kHz)",
+                      ),
+                    );
+                  }).toList(),
+              onChanged: (BandRange? band) {
+                if (band != null) {
+                  setState(() {
+                    selectedBand = band;
+                    freqRange = RangeValues(band.start, band.end);
+                    startFreqController.text = band.start.round().toString();
+                    endFreqController.text = band.end.round().toString();
+                  });
+                }
+              },
+            ),
+          ),
+          _buildScanStatus(),
+          Expanded(
+            child: _buildTabView(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTabView() {
+    return DefaultTabController(
+      length: 2,
+      child: Column(
+        children: [
+          TabBar(
+            labelColor: Colors.blue,
+            unselectedLabelColor: Colors.grey,
+            indicatorColor: Colors.blue,
+            tabs: [
+              Tab(icon: Icon(Icons.show_chart)),
+              Tab(icon: Icon(Icons.list)),
+            ],
+          ),
+          Expanded(
+            child: TabBarView(
+              children: [
+                // Chart Tab
+                Obx(() {
+                  final _ = controller.scanResults.length;
+                  return Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: SWRChartWidget(
+                      scanResults: controller.scanResults,
+                      minFreq: freqRange.start,
+                      maxFreq: freqRange.end,
                     ),
                   );
-                }).toList(),
-            onChanged: (BandRange? band) {
-              if (band != null) {
-                setState(() {
-                  selectedBand = band;
-                  freqRange = RangeValues(band.start, band.end);
-                  startFreqController.text = band.start.round().toString();
-                  endFreqController.text = band.end.round().toString();
-                });
-              }
-            },
+                }),
+                // Liste Tab
+                _buildResultsList(),
+              ],
+            ),
           ),
-
-          _buildScanStatus(),
-          Obx(() {
-            final _ = controller.scanResults.length;
-            return SizedBox(
-              height: 330,
-              child: SWRChartWidget(
-                scanResults: controller.scanResults,
-                minFreq: freqRange.start,
-                maxFreq: freqRange.end,
-              ),
-            );
-          }),
-          Expanded(flex: 1, child: _buildResultsList()),
         ],
       ),
     );
@@ -166,7 +199,7 @@ class _FrequencyScanPageState extends State<FrequencyScanPage> {
                 child: TextField(
                   controller: endFreqController,
                   decoration: InputDecoration(
-                    labelText: 'Ende (kHz)',
+                    labelText: 'End (kHz)',
                     border: OutlineInputBorder(),
                   ),
                   keyboardType: TextInputType.number,
@@ -183,7 +216,7 @@ class _FrequencyScanPageState extends State<FrequencyScanPage> {
                 child: TextField(
                   controller: antennaTypeController,
                   decoration: InputDecoration(
-                    labelText: 'Ant Infos',
+                    labelText: 'Antenna Info',
                     border: OutlineInputBorder(),
                   ),
                 ),
@@ -236,7 +269,7 @@ class _FrequencyScanPageState extends State<FrequencyScanPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text("Start: ${freqRange.start.round()} kHz"),
-              Text("Ende: ${freqRange.end.round()} kHz"),
+              Text("End: ${freqRange.end.round()} kHz"),
             ],
           ),
         ],
@@ -249,7 +282,7 @@ class _FrequencyScanPageState extends State<FrequencyScanPage> {
       final isScanning = controller.isScanning.value;
       return ElevatedButton.icon(
         icon: Icon(isScanning ? Icons.stop : Icons.play_arrow),
-        label: Text(isScanning ? 'Scan abbrechen' : 'Scan starten'),
+        label: Text(isScanning ? 'Cancel Scan' : 'Start Scan'),
         style: ElevatedButton.styleFrom(
           backgroundColor: isScanning ? Colors.red : Colors.green,
           foregroundColor: Colors.white,
@@ -282,7 +315,7 @@ class _FrequencyScanPageState extends State<FrequencyScanPage> {
             if (controller.isScanning.value) {
               return Text(
                 status.isEmpty
-                    ? 'Scan läuft... ${(progress * 100).toInt()}%'
+                    ? 'Scanning... ${(progress * 100).toInt()}%'
                     : status,
               );
             } else if (status.isNotEmpty) {
@@ -295,7 +328,7 @@ class _FrequencyScanPageState extends State<FrequencyScanPage> {
             () =>
                 controller.scanResults.isNotEmpty || controller.isScanning.value
                     ? Text(
-                      'Gefundene Ergebnisse: ${controller.scanResults.length}',
+                      'Results Found: ${controller.scanResults.length}',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 11,
@@ -315,8 +348,8 @@ class _FrequencyScanPageState extends State<FrequencyScanPage> {
         return Center(
           child: Text(
             controller.isScanning.value
-                ? 'Scan läuft...'
-                : 'Noch keine Scan-Ergebnisse vorhanden',
+                ? 'Scanning...'
+                : 'No scan results available yet',
             style: TextStyle(fontSize: 16, color: Colors.grey),
           ),
         );
@@ -395,8 +428,8 @@ class _FrequencyScanPageState extends State<FrequencyScanPage> {
 
     if (startFreq >= endFreq) {
       Get.snackbar(
-        'Ungültiger Bereich',
-        'Startfrequenz muss kleiner als Endfrequenz sein.',
+        'Invalid Range',
+        'Start frequency must be less than end frequency.',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
@@ -408,8 +441,8 @@ class _FrequencyScanPageState extends State<FrequencyScanPage> {
 
     if (!success) {
       Get.snackbar(
-        'Scan-Fehler',
-        'Der Scan konnte nicht gestartet werden',
+        'Scan Error',
+        'The scan could not be started',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
@@ -420,7 +453,22 @@ class _FrequencyScanPageState extends State<FrequencyScanPage> {
   void _analyzeWithChatGPT() async {
     final results = controller.scanResults;
     if (results.isEmpty) {
-      Get.snackbar("Keine Daten", "Es gibt keine Ergebnisse zum Analysieren.");
+      Get.snackbar("No Data", "There are no results to analyze.");
+      return;
+    }
+
+    // Load saved API key
+    final prefs = await SharedPreferences.getInstance();
+    final apiKey = prefs.getString('chatgpt_api_key') ?? '';
+
+    if (apiKey.isEmpty) {
+      Get.snackbar(
+        "API Key Missing",
+        "Please add ChatGPT API key in settings.",
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.orange,
+        colorText: Colors.white,
+      );
       return;
     }
 
@@ -436,7 +484,7 @@ class _FrequencyScanPageState extends State<FrequencyScanPage> {
                 CircularProgressIndicator(),
                 SizedBox(height: 16),
                 Text(
-                  "GPT analysiert die Daten...",
+                  "GPT is analyzing the data...",
                   style: TextStyle(color: Colors.white),
                 ),
               ],
@@ -447,17 +495,16 @@ class _FrequencyScanPageState extends State<FrequencyScanPage> {
     String dataText = results
         .map(
           (r) =>
-              "Frequenz: ${r.frequency} kHz, SWR: ${r.swr}, R: ${r.r}, X: ${r.x}, Z: ${r.z}",
+              "Frequency: ${r.frequency} kHz, SWR: ${r.swr}, R: ${r.r}, X: ${r.x}, Z: ${r.z}",
         )
         .join("\n");
 
     final prompt = '''
-Analysiere die folgenden Antennenmesswerte und mache Antennenvorschläge.
-${antennaTypeController.text.trim().isNotEmpty ? "Antennentyp: ${antennaTypeController.text.trim()}\n" : ""}
+Analyze the following antenna measurement values and make antenna suggestions.
+${antennaTypeController.text.trim().isNotEmpty ? "Antenna Type: ${antennaTypeController.text.trim()}\n" : ""}
 $dataText
 ''';
 
-    final apiKey = 'sk-...'; // dein eigener API-Key
     final url = Uri.parse("https://api.openai.com/v1/chat/completions");
 
     try {
@@ -472,7 +519,7 @@ $dataText
           "messages": [
             {
               "role": "system",
-              "content": "Du bist ein Experte für Antennenanalyse.",
+              "content": "You are an expert in antenna analysis.",
             },
             {"role": "user", "content": prompt},
           ],
@@ -491,24 +538,24 @@ $dataText
           context: Get.context!,
           builder:
               (context) => AlertDialog(
-                title: Text("GPT-Analyse"),
+                title: Text("GPT Analysis"),
                 content: SingleChildScrollView(
-                  child: Text(answer ?? "Keine Antwort erhalten."),
+                  child: Text(answer ?? "No response received."),
                 ),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: Text("Schließen"),
+                    child: Text("Close"),
                   ),
                 ],
               ),
         );
       } else {
-        Get.snackbar("Fehler", "ChatGPT API-Fehler: ${response.statusCode}");
+        Get.snackbar("Error", "ChatGPT API Error: ${response.statusCode}");
       }
     } catch (e) {
       Navigator.of(Get.context!).pop();
-      Get.snackbar("Fehler", "Fehler bei der Anfrage: $e");
+      Get.snackbar("Error", "Request error: $e");
     }
   }
 }

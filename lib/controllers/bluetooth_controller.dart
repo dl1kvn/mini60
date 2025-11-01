@@ -1,11 +1,13 @@
 // lib/controllers/bluetooth_controller.dart
 
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter_blue_classic/flutter_blue_classic.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import '../models/mini60_device.dart';
 import '../models/scan_result.dart';
 
@@ -51,6 +53,113 @@ class BluetoothController extends GetxController {
   }
 
   //---------------------------------------------------
+  // Berechtigungsverwaltung
+  //---------------------------------------------------
+
+  // Prüfe und fordere Bluetooth-Berechtigungen an
+  Future<bool> requestBluetoothPermissions() async {
+    if (Platform.isAndroid) {
+      try {
+        final androidInfo = await DeviceInfoPlugin().androidInfo;
+        final sdkInt = androidInfo.version.sdkInt;
+
+        // debugPrint'Android SDK Version: $sdkInt');
+
+        if (sdkInt >= 31) {
+          // Android 12+ (API 31+)
+          // debugPrint'Fordere Android 12+ Berechtigungen an (BLUETOOTH_SCAN, BLUETOOTH_CONNECT)');
+
+          final statuses =
+              await [
+                Permission.bluetoothScan,
+                Permission.bluetoothConnect,
+              ].request();
+
+          final allGranted = statuses.values.every(
+            (status) => status.isGranted,
+          );
+
+          if (!allGranted) {
+            // debugPrint'Nicht alle Berechtigungen erteilt: $statuses');
+          }
+
+          return allGranted;
+        } else if (sdkInt >= 23) {
+          // Android 6-11 (API 23-30)
+          // debugPrint'Fordere Android 6-11 Berechtigungen an (BLUETOOTH, LOCATION)');
+
+          final statuses =
+              await [Permission.bluetooth, Permission.location].request();
+
+          final allGranted = statuses.values.every(
+            (status) => status.isGranted,
+          );
+
+          if (!allGranted) {
+            // debugPrint'Nicht alle Berechtigungen erteilt: $statuses');
+          }
+
+          // Prüfe zusätzlich, ob Standortdienste aktiviert sind
+          if (allGranted && sdkInt >= 23 && sdkInt <= 30) {
+            final locationServiceEnabled =
+                await Permission.location.serviceStatus.isEnabled;
+            if (!locationServiceEnabled) {
+              // debugPrint'Standortdienste sind nicht aktiviert');
+              Get.snackbar(
+                'Standortdienste erforderlich',
+                'Bitte aktivieren Sie die Standortdienste für Bluetooth-Scanning',
+                snackPosition: SnackPosition.BOTTOM,
+                duration: Duration(seconds: 5),
+              );
+              return false;
+            }
+          }
+
+          return allGranted;
+        } else {
+          // Android 5 (API 21-22) - keine Runtime-Berechtigungen erforderlich
+          // debugPrint'Android < 6.0, keine Runtime-Berechtigungen erforderlich');
+          return true;
+        }
+      } catch (e) {
+        // debugPrint'Fehler beim Anfordern von Berechtigungen: $e');
+        return false;
+      }
+    }
+    // Für andere Plattformen (iOS) geben wir true zurück
+    return true;
+  }
+
+  // Prüfe, ob alle erforderlichen Berechtigungen erteilt sind
+  Future<bool> hasBluetoothPermissions() async {
+    if (Platform.isAndroid) {
+      try {
+        final androidInfo = await DeviceInfoPlugin().androidInfo;
+        final sdkInt = androidInfo.version.sdkInt;
+
+        if (sdkInt >= 31) {
+          // Android 12+
+          final scanStatus = await Permission.bluetoothScan.status;
+          final connectStatus = await Permission.bluetoothConnect.status;
+          return scanStatus.isGranted && connectStatus.isGranted;
+        } else if (sdkInt >= 23) {
+          // Android 6-11
+          final bluetoothStatus = await Permission.bluetooth.status;
+          final locationStatus = await Permission.location.status;
+          return bluetoothStatus.isGranted && locationStatus.isGranted;
+        } else {
+          // Android 5
+          return true;
+        }
+      } catch (e) {
+        // debugPrint'Fehler beim Prüfen von Berechtigungen: $e');
+        return false;
+      }
+    }
+    return true;
+  }
+
+  //---------------------------------------------------
   // Bluetooth-Verbindung
   //---------------------------------------------------
 
@@ -76,9 +185,23 @@ class BluetoothController extends GetxController {
   }
 
   // Starte Bluetooth-Scan nach Geräten
-  void startScan() {
+  void startScan() async {
     try {
       if (isScanning.value) return;
+
+      // Prüfe und fordere Berechtigungen an
+      final hasPermissions = await requestBluetoothPermissions();
+      if (!hasPermissions) {
+        Get.snackbar(
+          'Fehlende Berechtigungen',
+          'Bluetooth-Berechtigungen werden benötigt, um nach Geräten zu suchen',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Get.theme.colorScheme.error,
+          colorText: Get.theme.colorScheme.onError,
+          duration: Duration(seconds: 5),
+        );
+        return;
+      }
 
       // debugPrint'Starte Bluetooth-Scan');
       devices.clear();
@@ -298,7 +421,7 @@ class BluetoothController extends GetxController {
         _scanTimer?.cancel();
         _scanTimer = null;
         isScanning.value = false;
-        scanStatus.value = "Scan abgeschlossen";
+        scanStatus.value = "Scan finished";
         progress.value = 1.0;
         return;
       }
@@ -424,7 +547,7 @@ class BluetoothController extends GetxController {
     if (_receiveBuffer.startsWith("End")) {
       _scanStarted = false;
       progress.value = 1.0;
-      scanStatus.value = "Scan abgeschlossen";
+      scanStatus.value = "Scan finished";
       isScanning.value = false;
       _receiveBuffer = _receiveBuffer.substring("End".length).trim();
 
