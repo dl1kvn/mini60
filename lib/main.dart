@@ -20,7 +20,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
-      title: 'Mini60 App',
+      title: 'Mini60 Antenna Analyzer',
       theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
       home: HomePage(),
     );
@@ -37,7 +37,7 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Mini60 App'),
+        title: Text('Mini60 Antenna Analyzer'),
         actions: [
           IconButton(
             icon: Icon(Icons.info_outline),

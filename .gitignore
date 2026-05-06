@@ -49,3 +49,7 @@ app.*.map.json
 /android/app/upload-keystore.jks
 /android/app/*.jks
 /android/app/*.keystore
+
+# Scratch screenshots dropped into the repo root from chat / clipboard
+/s*.png
+/screens/
