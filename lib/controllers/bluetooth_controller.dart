@@ -8,6 +8,7 @@ import 'package:get/get.dart';
 import 'package:flutter_blue_classic/flutter_blue_classic.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/mini60_device.dart';
 import '../models/scan_result.dart';
 
@@ -360,7 +361,11 @@ class BluetoothController extends GetxController {
       _currentFrequency = startFreq;
       _endFrequency = endFreq;
 
-      _expectedDatapoints = 50;
+      // Load steps per scan from settings
+      final prefs = await SharedPreferences.getInstance();
+      final stepsPerScan = prefs.getInt('steps_per_scan') ?? 50;
+
+      _expectedDatapoints = stepsPerScan;
       _stepSize = (endFreq - startFreq) / (_expectedDatapoints - 1);
 
       final int start = (startFreq * 1000).toInt();

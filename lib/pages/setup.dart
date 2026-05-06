@@ -24,17 +24,16 @@ class _SetupPageState extends State<SetupPage> {
   final nameController = TextEditingController();
   final startController = TextEditingController();
   final endController = TextEditingController();
-  final apiKeyController = TextEditingController();
 
   List<BandRange> bands = [];
   int? editingIndex;
-  bool _obscureApiKey = true;
+  double _stepsPerScan = 50.0;
 
   @override
   void initState() {
     super.initState();
     _loadBands();
-    _loadApiKey();
+    _loadStepsPerScan();
   }
 
   void _loadBands() async {
@@ -45,24 +44,20 @@ class _SetupPageState extends State<SetupPage> {
     });
   }
 
-  void _loadApiKey() async {
+  void _loadStepsPerScan() async {
     final prefs = await SharedPreferences.getInstance();
-    final apiKey = prefs.getString('chatgpt_api_key') ?? '';
+    final steps = prefs.getInt('steps_per_scan') ?? 50;
     setState(() {
-      apiKeyController.text = apiKey;
+      _stepsPerScan = steps.toDouble();
     });
   }
 
-  void _saveApiKey() async {
+  void _saveStepsPerScan(double value) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('chatgpt_api_key', apiKeyController.text.trim());
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('ChatGPT API key saved'),
-        backgroundColor: Colors.green,
-        duration: Duration(seconds: 2),
-      ),
-    );
+    await prefs.setInt('steps_per_scan', value.round());
+    setState(() {
+      _stepsPerScan = value;
+    });
   }
 
   void _saveBands() async {
@@ -127,7 +122,7 @@ class _SetupPageState extends State<SetupPage> {
         padding: const EdgeInsets.all(12.0),
         child: Column(
           children: [
-            // ChatGPT API-Key Section
+            // Steps Per Scan Section
             Card(
               elevation: 2,
               child: Padding(
@@ -137,10 +132,10 @@ class _SetupPageState extends State<SetupPage> {
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.key, color: Colors.blue),
+                        Icon(Icons.tune, color: Colors.blue),
                         SizedBox(width: 8),
                         Text(
-                          'ChatGPT API Key',
+                          'Steps Per Scan',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -149,37 +144,36 @@ class _SetupPageState extends State<SetupPage> {
                       ],
                     ),
                     SizedBox(height: 8),
-                    TextField(
-                      controller: apiKeyController,
-                      obscureText: _obscureApiKey,
-                      decoration: InputDecoration(
-                        labelText: 'API Key',
-                        hintText: 'sk-proj-...',
-                        border: OutlineInputBorder(),
-                        suffixIcon: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: Icon(
-                                _obscureApiKey ? Icons.visibility : Icons.visibility_off,
-                              ),
-                              onPressed: () {
-                                setState(() {
-                                  _obscureApiKey = !_obscureApiKey;
-                                });
-                              },
-                            ),
-                            IconButton(
-                              icon: Icon(Icons.save, color: Colors.green),
-                              onPressed: _saveApiKey,
-                            ),
-                          ],
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Slider(
+                            value: _stepsPerScan,
+                            min: 20,
+                            max: 120,
+                            divisions: 160,
+                            label: _stepsPerScan.round().toString(),
+                            onChanged: (value) {
+                              _saveStepsPerScan(value);
+                            },
+                          ),
                         ),
-                      ),
+                        SizedBox(width: 8),
+                        Container(
+                          width: 50,
+                          child: Text(
+                            '${_stepsPerScan.round()}',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
                     ),
-                    SizedBox(height: 4),
                     Text(
-                      'The API key is securely stored on the device',
+                      'Number of measurement points per frequency scan (default: 50)',
                       style: TextStyle(fontSize: 11, color: Colors.grey),
                     ),
                   ],
@@ -190,10 +184,7 @@ class _SetupPageState extends State<SetupPage> {
             // Band Management Section
             Text(
               'Manage Bands',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 8),
             TextField(
@@ -226,9 +217,12 @@ class _SetupPageState extends State<SetupPage> {
                   child: ElevatedButton.icon(
                     onPressed: _addBand,
                     icon: Icon(editingIndex != null ? Icons.save : Icons.add),
-                    label: Text(editingIndex != null ? 'Update Band' : 'Add Band'),
+                    label: Text(
+                      editingIndex != null ? 'Update Band' : 'Add Band',
+                    ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: editingIndex != null ? Colors.orange : null,
+                      backgroundColor:
+                          editingIndex != null ? Colors.orange : null,
                     ),
                   ),
                 ),
@@ -268,7 +262,8 @@ class _SetupPageState extends State<SetupPage> {
                     title: Text(
                       '${band.name}: ${band.start.toInt()}–${band.end.toInt()} kHz',
                     ),
-                    tileColor: isEditing ? Colors.orange.withOpacity(0.2) : null,
+                    tileColor:
+                        isEditing ? Colors.orange.withOpacity(0.2) : null,
                     onTap: () => _editBand(index),
                     trailing: IconButton(
                       icon: Icon(Icons.delete, color: Colors.red),

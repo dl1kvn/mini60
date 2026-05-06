@@ -1,4 +1,4 @@
-# qultor_filter
+# mini60
 
 A new Flutter project.
 

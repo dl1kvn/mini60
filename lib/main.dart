@@ -2,11 +2,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:mini6060/pages/antennatypes.dart';
-import 'package:mini6060/pages/splash_screen.dart';
+import 'package:mini60/pages/antennatypes.dart';
 import 'controllers/bluetooth_controller.dart';
 import 'widgets/connect_dialog.dart';
 import 'pages/frequency_scan_page.dart';
+import 'pages/about_page.dart';
 
 void main() {
   // Ensure Flutter binding is initialized
@@ -22,7 +22,7 @@ class MyApp extends StatelessWidget {
     return GetMaterialApp(
       title: 'Mini60 App',
       theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
-      home: SplashScreen(nextPage: HomePage()),
+      home: HomePage(),
     );
   }
 }
@@ -36,7 +36,18 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Mini60 App')),
+      appBar: AppBar(
+        title: Text('Mini60 App'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.info_outline),
+            tooltip: 'About',
+            onPressed: () {
+              Get.to(() => AboutPage());
+            },
+          ),
+        ],
+      ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -83,14 +94,15 @@ class HomePage extends StatelessWidget {
                 );
 
                 if (result == true) {
-                  // Connected
-                  Get.snackbar(
-                    'Connected',
-                    'Successfully connected to ${bluetoothController.deviceName.value}',
-                    snackPosition: SnackPosition.BOTTOM,
-                    backgroundColor: Colors.green,
-                    colorText: Colors.white,
-                  );
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    Get.snackbar(
+                      'Connected',
+                      'Successfully connected to ${bluetoothController.deviceName.value}',
+                      snackPosition: SnackPosition.BOTTOM,
+                      backgroundColor: Colors.green,
+                      colorText: Colors.white,
+                    );
+                  });
                 }
               },
             ),

@@ -139,10 +139,7 @@ class _ConnectDialogState extends State<ConnectDialog> {
       if (devices.isEmpty) {
         return Column(
           children: [
-            Text(
-              'No Mini60 devices found',
-              style: TextStyle(fontSize: 16),
-            ),
+            Text('No Mini60 devices found', style: TextStyle(fontSize: 16)),
             SizedBox(height: 16),
             Text(
               'Make sure your Mini60 is turned on and within range',
@@ -154,9 +151,7 @@ class _ConnectDialogState extends State<ConnectDialog> {
               onPressed: _openAppSettings,
               icon: Icon(Icons.settings, size: 18),
               label: Text('Open App Permissions'),
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.blue,
-              ),
+              style: TextButton.styleFrom(foregroundColor: Colors.blue),
             ),
           ],
         );
@@ -238,10 +233,7 @@ class _ConnectDialogState extends State<ConnectDialog> {
           TextButton.icon(
             onPressed: _openAppSettings,
             icon: Icon(Icons.settings, size: 16),
-            label: Text(
-              'App Permissions',
-              style: TextStyle(fontSize: 12),
-            ),
+            label: Text('App Permissions', style: TextStyle(fontSize: 12)),
             style: TextButton.styleFrom(
               foregroundColor: Colors.grey[700],
               padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -262,9 +254,7 @@ class _ConnectDialogState extends State<ConnectDialog> {
                       controller.isScanning.value
                           ? controller.stopScan
                           : controller.startScan,
-                  child: Text(
-                    controller.isScanning.value ? 'Stop Scan' : 'Start Scan',
-                  ),
+                  child: Text(controller.isScanning.value ? 'Stop' : 'Start'),
                 ),
             ],
           ),

@@ -1,8 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:http/http.dart' as http;
-import 'package:mini6060/pages/setup.dart';
+import 'package:mini60/pages/setup.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../controllers/bluetooth_controller.dart';
@@ -30,7 +29,6 @@ class _FrequencyScanPageState extends State<FrequencyScanPage> {
   final TextEditingController endFreqController = TextEditingController(
     text: '14400',
   );
-  final TextEditingController antennaTypeController = TextEditingController();
 
   double sliderMin = 1800;
   double sliderMax = 50400;
@@ -94,36 +92,93 @@ class _FrequencyScanPageState extends State<FrequencyScanPage> {
           _buildFrequencyInputs(),
           _buildRangeSlider(),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: DropdownButton<BandRange>(
-              hint: Text("Select Band"),
-              value: selectedBand,
-              isExpanded: true,
-              items:
-                  bandRanges.map((band) {
-                    return DropdownMenuItem(
-                      value: band,
-                      child: Text(
-                        "${band.name} (${band.start.toInt()}–${band.end.toInt()} kHz)",
-                      ),
-                    );
-                  }).toList(),
-              onChanged: (BandRange? band) {
-                if (band != null) {
-                  setState(() {
-                    selectedBand = band;
-                    freqRange = RangeValues(band.start, band.end);
-                    startFreqController.text = band.start.round().toString();
-                    endFreqController.text = band.end.round().toString();
-                  });
-                }
-              },
+            padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 8.0),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.blue.shade50, Colors.blue.shade100],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: Colors.blue.shade300, width: 2),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.blue.withOpacity(0.03),
+                    blurRadius: 8,
+                    offset: Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 4.0,
+                  vertical: 1.0,
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<BandRange>(
+                    hint: Row(
+                      children: [
+                        Text(
+                          "Select Band",
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    value: bandRanges.contains(selectedBand) ? selectedBand : null,
+                    isExpanded: true,
+                    icon: Icon(
+                      Icons.arrow_drop_down,
+                      color: Colors.blue.shade700,
+                      size: 30,
+                    ),
+                    dropdownColor: Colors.blue.shade50,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.blue.shade900,
+                    ),
+                    items:
+                        bandRanges.map((band) {
+                          return DropdownMenuItem(
+                            value: band,
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.radio,
+                                  color: Colors.blue.shade600,
+                                  size: 20,
+                                ),
+                                SizedBox(width: 8),
+                                Text(
+                                  "${band.name} (${band.start.toInt()}–${band.end.toInt()} kHz)",
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                    onChanged: (BandRange? band) {
+                      if (band != null) {
+                        setState(() {
+                          selectedBand = band;
+                          freqRange = RangeValues(band.start, band.end);
+                          startFreqController.text =
+                              band.start.round().toString();
+                          endFreqController.text = band.end.round().toString();
+                        });
+                      }
+                    },
+                  ),
+                ),
+              ),
             ),
           ),
           _buildScanStatus(),
-          Expanded(
-            child: _buildTabView(),
-          ),
+          Expanded(child: _buildTabView()),
         ],
       ),
     );
@@ -173,6 +228,18 @@ class _FrequencyScanPageState extends State<FrequencyScanPage> {
     final list = prefs.getStringList('bandRanges') ?? [];
     setState(() {
       bandRanges = list.map((e) => BandRange.fromJson(jsonDecode(e))).toList();
+
+      // Reset selectedBand if it's not in the updated list
+      if (selectedBand != null) {
+        final stillExists = bandRanges.any(
+          (band) => band.name == selectedBand!.name &&
+                    band.start == selectedBand!.start &&
+                    band.end == selectedBand!.end
+        );
+        if (!stillExists) {
+          selectedBand = null;
+        }
+      }
     });
   }
 
@@ -190,8 +257,11 @@ class _FrequencyScanPageState extends State<FrequencyScanPage> {
                   decoration: InputDecoration(
                     labelText: 'Start (kHz)',
                     border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    isDense: true,
                   ),
                   keyboardType: TextInputType.number,
+                  style: TextStyle(fontSize: 14),
                 ),
               ),
               SizedBox(width: 4),
@@ -201,34 +271,15 @@ class _FrequencyScanPageState extends State<FrequencyScanPage> {
                   decoration: InputDecoration(
                     labelText: 'End (kHz)',
                     border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    isDense: true,
                   ),
                   keyboardType: TextInputType.number,
+                  style: TextStyle(fontSize: 14),
                 ),
               ),
               SizedBox(width: 4),
               _buildScanControls(),
-            ],
-          ),
-          SizedBox(height: 6),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: antennaTypeController,
-                  decoration: InputDecoration(
-                    labelText: 'Antenna Info',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-              ),
-              SizedBox(width: 5),
-              Expanded(
-                child: ElevatedButton.icon(
-                  icon: Icon(Icons.chat),
-                  label: Text("GPT Check"),
-                  onPressed: _analyzeWithChatGPT,
-                ),
-              ),
             ],
           ),
         ],
@@ -282,7 +333,7 @@ class _FrequencyScanPageState extends State<FrequencyScanPage> {
       final isScanning = controller.isScanning.value;
       return ElevatedButton.icon(
         icon: Icon(isScanning ? Icons.stop : Icons.play_arrow),
-        label: Text(isScanning ? 'Cancel Scan' : 'Start Scan'),
+        label: Text(isScanning ? 'Cancel' : 'Start'),
         style: ElevatedButton.styleFrom(
           backgroundColor: isScanning ? Colors.red : Colors.green,
           foregroundColor: Colors.white,
@@ -312,30 +363,42 @@ class _FrequencyScanPageState extends State<FrequencyScanPage> {
           Obx(() {
             final status = controller.scanStatus.value;
             final progress = controller.progress.value;
+            final resultsCount = controller.scanResults.length;
+
             if (controller.isScanning.value) {
               return Text(
                 status.isEmpty
                     ? 'Scanning... ${(progress * 100).toInt()}%'
                     : status,
               );
-            } else if (status.isNotEmpty) {
-              return Text(status, style: TextStyle(fontSize: 11));
-            } else {
-              return SizedBox.shrink();
-            }
-          }),
-          Obx(
-            () =>
-                controller.scanResults.isNotEmpty || controller.isScanning.value
-                    ? Text(
-                      'Results Found: ${controller.scanResults.length}',
+            } else if (status.isNotEmpty || resultsCount > 0) {
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (status.isNotEmpty)
+                    Text(
+                      status,
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                    ),
+                  if (status.isNotEmpty && resultsCount > 0)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      child: Text('•', style: TextStyle(fontSize: 11)),
+                    ),
+                  if (resultsCount > 0)
+                    Text(
+                      'Results: $resultsCount',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 11,
                       ),
-                    )
-                    : SizedBox.shrink(),
-          ),
+                    ),
+                ],
+              );
+            } else {
+              return SizedBox.shrink();
+            }
+          }),
         ],
       ),
     );
@@ -450,112 +513,4 @@ class _FrequencyScanPageState extends State<FrequencyScanPage> {
     }
   }
 
-  void _analyzeWithChatGPT() async {
-    final results = controller.scanResults;
-    if (results.isEmpty) {
-      Get.snackbar("No Data", "There are no results to analyze.");
-      return;
-    }
-
-    // Load saved API key
-    final prefs = await SharedPreferences.getInstance();
-    final apiKey = prefs.getString('chatgpt_api_key') ?? '';
-
-    if (apiKey.isEmpty) {
-      Get.snackbar(
-        "API Key Missing",
-        "Please add ChatGPT API key in settings.",
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.orange,
-        colorText: Colors.white,
-      );
-      return;
-    }
-
-    showDialog(
-      context: Get.context!,
-      barrierDismissible: false,
-      builder:
-          (context) => Dialog(
-            backgroundColor: Colors.transparent,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
-                Text(
-                  "GPT is analyzing the data...",
-                  style: TextStyle(color: Colors.white),
-                ),
-              ],
-            ),
-          ),
-    );
-
-    String dataText = results
-        .map(
-          (r) =>
-              "Frequency: ${r.frequency} kHz, SWR: ${r.swr}, R: ${r.r}, X: ${r.x}, Z: ${r.z}",
-        )
-        .join("\n");
-
-    final prompt = '''
-Analyze the following antenna measurement values and make antenna suggestions.
-${antennaTypeController.text.trim().isNotEmpty ? "Antenna Type: ${antennaTypeController.text.trim()}\n" : ""}
-$dataText
-''';
-
-    final url = Uri.parse("https://api.openai.com/v1/chat/completions");
-
-    try {
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $apiKey',
-        },
-        body: jsonEncode({
-          "model": "gpt-3.5-turbo",
-          "messages": [
-            {
-              "role": "system",
-              "content": "You are an expert in antenna analysis.",
-            },
-            {"role": "user", "content": prompt},
-          ],
-          "temperature": 0.7,
-        }),
-      );
-
-      Navigator.of(Get.context!).pop();
-
-      if (response.statusCode == 200) {
-        final decoded = utf8.decode(response.bodyBytes);
-        final result = jsonDecode(decoded);
-        final answer = result['choices'][0]['message']['content'];
-
-        showDialog(
-          context: Get.context!,
-          builder:
-              (context) => AlertDialog(
-                title: Text("GPT Analysis"),
-                content: SingleChildScrollView(
-                  child: Text(answer ?? "No response received."),
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: Text("Close"),
-                  ),
-                ],
-              ),
-        );
-      } else {
-        Get.snackbar("Error", "ChatGPT API Error: ${response.statusCode}");
-      }
-    } catch (e) {
-      Navigator.of(Get.context!).pop();
-      Get.snackbar("Error", "Request error: $e");
-    }
-  }
 }
