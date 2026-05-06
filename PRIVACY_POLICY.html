@@ -1,1 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy Policy - Mini60 Antenna Analyzer</title>
+<style>
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    max-width: 720px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+    color: #222;
+    line-height: 1.55;
+  }
+  h1 { font-size: 1.6rem; margin-bottom: 0.2rem; }
+  h2 { font-size: 1.15rem; margin-top: 1.8rem; border-bottom: 1px solid #eee; padding-bottom: 0.2rem; }
+  .meta { color: #666; font-size: 0.9rem; margin-bottom: 1.5rem; }
+  code { background: #f4f4f4; padding: 0 0.25rem; border-radius: 3px; font-size: 0.95em; }
+  ul { padding-left: 1.4rem; }
+  a { color: #1a5fb4; }
+</style>
+</head>
+<body>
 
+<h1>Privacy Policy - Mini60 Antenna Analyzer</h1>
+<div class="meta">
+  Last updated: 2026-05-04<br>
+  Developer: DL1KVN<br>
+  Contact: <a href="mailto:dvn@almoe.de">dvn@almoe.de</a>
+</div>
+
+<p>This privacy policy describes how the <strong>Mini60 Antenna Analyzer</strong> Android app ("the App") handles information.</p>
+
+<h2>Summary</h2>
+<p>The App <strong>does not collect, transmit, or share any personal data</strong>. All data stays on your device.</p>
+
+<h2>What the App does</h2>
+<p>The App is a companion tool for the Mini60 / SARK-100 family of HF antenna analyzers. It connects to the analyzer over Bluetooth, performs frequency sweeps, and displays SWR/impedance results.</p>
+
+<h2>Data the App stores locally</h2>
+<p>The App stores the following on your device only, using Android's <code>SharedPreferences</code> and local app storage:</p>
+<ul>
+  <li>Frequency-range presets ("bands") that you create</li>
+  <li>Last-used start/end frequencies</li>
+  <li>Steps-per-scan setting</li>
+  <li>Scan results during a session</li>
+</ul>
+<p>This data never leaves your device. There is no backend server, no analytics SDK, and no advertising SDK.</p>
+
+<h2>Permissions the App requests</h2>
+<ul>
+  <li><strong>Bluetooth (Scan / Connect)</strong> - required to discover and communicate with the Mini60 / SARK-100 hardware over Bluetooth Classic. The App declares the <code>neverForLocation</code> flag, meaning Bluetooth scanning is <strong>not</strong> used to derive your location.</li>
+  <li><strong>Location (Android 6-11 only, API &le; 30)</strong> - older Android versions require location permission to allow Bluetooth scanning. The App does not read, store, or transmit location data. This permission is not requested on Android 12 or newer.</li>
+</ul>
+
+<h2>Data sharing</h2>
+<p>None. The App makes no network requests and does not contact any server operated by the developer or any third party.</p>
+
+<h2>Children</h2>
+<p>The App is not directed at children. It contains no advertising or in-app purchases.</p>
+
+<h2>Changes</h2>
+<p>If this policy changes, the updated version will be published at the same URL. Material changes will be announced in the App's release notes on Google Play.</p>
+
+<h2>Contact</h2>
+<p>Questions about this policy can be sent to <a href="mailto:dvn@almoe.de">dvn@almoe.de</a>.</p>
+
+</body>
+</html>
